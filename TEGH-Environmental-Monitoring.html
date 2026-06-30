@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TEGH / TEIL Environmental Monitoring Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Noto+Sans+Thai:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root{
+    --bg:#e9f1f7; --panel:#ffffff; --panel2:#f3f8fc;
+    --line:#d8e4ee; --border:#d8e4ee;
+    --text:#0e3a5c; --muted:#5d748a; --accent:#0a97d9;
+    --pass:#2e9e6b; --watch:#efa92c; --exceed:#e0483f; --nodata:#9fb1c0;
+    --headA:#0a4f7a; --headB:#1583bd; --headBd:#0a97d9; --headTx:#ffffff;
+    --btnBg:#ffffff; --btnBd:#c2d4e2; --inBg:#ffffff; --inBd:#cdd9e6;
+    --thBg:#eaf2f8; --hover:#eef6fb; --legBg:rgba(255,255,255,.96);
+    --ring:0 6px 22px rgba(11,58,92,.10);
+    --glass:rgba(255,255,255,.74); --glassBd:rgba(255,255,255,.65); --glassHi:0 14px 34px rgba(11,58,92,.16);
+  }
+  body.dark{
+    --bg:#071a28; --panel:#0e2c41; --panel2:#13344c;
+    --line:#1f4d6b; --border:#1f4d6b;
+    --text:#e6f1f9; --muted:#9fbdd2; --accent:#37b7e0;
+    --headA:#062c47; --headB:#0c557f; --headBd:#1f6fa0; --headTx:#ffffff;
+    --btnBg:#13344c; --btnBd:#235a78; --inBg:#0a2436; --inBd:#235a78;
+    --thBg:#123a54; --hover:#16415f; --legBg:rgba(7,26,40,.96);
+    --ring:0 6px 22px rgba(0,0,0,.40);
+    --glass:rgba(14,44,65,.62); --glassBd:rgba(120,180,210,.16); --glassHi:0 14px 34px rgba(0,0,0,.5);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;height:100vh;overflow:hidden;font-family:"Inter","Noto Sans Thai","Segoe UI",Tahoma,sans-serif;color:var(--text);}
+  body{display:flex;flex-direction:column;
+    background:
+      radial-gradient(1100px 560px at 12% -12%, rgba(10,151,217,.13), transparent 60%),
+      radial-gradient(950px 520px at 112% 8%, rgba(46,158,107,.12), transparent 55%),
+      var(--bg);}
+  header{display:flex;align-items:center;gap:14px;padding:11px 20px;background:linear-gradient(120deg,var(--headA),var(--headB));box-shadow:0 4px 18px rgba(0,0,0,.18);position:relative;}
+  header::after{content:"";position:absolute;inset:0;background:radial-gradient(600px 200px at 80% -40%,rgba(255,255,255,.18),transparent);pointer-events:none;}
+  header .logo img{height:40px;display:block;filter:brightness(0) invert(1);}
+  header h1{font-size:22px;margin:0;font-weight:900;color:var(--headTx);line-height:1.15;letter-spacing:.4px;}
+  header .teil{font-weight:800;color:var(--headTx);font-size:18px;}
+  header .sub{font-size:11.5px;color:rgba(255,255,255,.8);letter-spacing:.2px;}
+  .accentstrip{height:4px;background:linear-gradient(90deg,#e5243b,#dda63a,#4c9f38,#26bde2,#3f7e44,#0a97d9,#fd6925);}
+  .headtools{display:flex;align-items:center;gap:8px;position:relative;z-index:5;}
+  button{cursor:pointer;border:1px solid var(--btnBd);background:var(--btnBg);color:var(--text);padding:6px 12px;border-radius:20px;font-size:12.5px;font-family:inherit;font-weight:600;transition:filter .15s,transform .1s;box-shadow:0 1px 2px rgba(11,58,92,.06);}
+  button:hover{filter:brightness(.97);transform:translateY(-1px);}
+  button.primary{background:var(--text);border-color:var(--text);color:var(--bg);font-weight:600;}
+  button.accent{background:var(--panel2);border-color:var(--btnBd);color:var(--text);font-weight:600;}
+  button.danger{background:transparent;border-color:#c25b52;color:#c25b52;}
+  button.small{padding:3px 8px;font-size:12px;}
+  .setup-panel{position:absolute;top:calc(100% + 10px);right:0;display:flex;flex-direction:column;gap:7px;align-items:stretch;
+    background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:10px;box-shadow:var(--ring);z-index:1200;min-width:210px;}
+  .setup-panel button{width:100%;text-align:left;}
+  .setup-panel.hidden{display:none;}
+  /* dashboard grid */
+  main{flex:1;min-height:0;display:grid;grid-template-columns:1fr 340px;gap:10px;padding:10px;}
+  .leftcol{display:flex;flex-direction:column;gap:10px;min-width:0;min-height:0;}
+  #map{flex:1;min-height:0;border-radius:10px;overflow:hidden;border:1px solid var(--border);}
+  .bottomRow{height:215px;display:grid;grid-template-columns:1.05fr 0.9fr 1.5fr;gap:10px;}
+  .rightcol{display:flex;flex-direction:column;gap:10px;overflow:auto;}
+  .card{background:var(--glass);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid var(--glassBd);border-radius:16px;padding:14px;box-shadow:var(--ring);display:flex;flex-direction:column;min-height:0;transition:transform .18s ease, box-shadow .18s ease;}
+  .card:hover{transform:translateY(-3px);box-shadow:var(--glassHi);}
+  .card h3{margin:0 0 9px;font-size:12px;letter-spacing:.8px;text-transform:uppercase;color:var(--accent);font-weight:800;display:flex;align-items:center;gap:6px;border-left:3px solid var(--accent);padding-left:8px;}
+  .card .body{flex:1;min-height:0;overflow:auto;}
+  .chartwrap{position:relative;flex:1;min-height:0;}
+  .li{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:4px 2px;font-size:13px;border-bottom:1px dashed var(--border);}
+  .li:last-child{border-bottom:none;}
+  .li .lab{display:flex;align-items:center;gap:8px;}
+  .dot{display:inline-block;width:12px;height:12px;border-radius:50%;border:1px solid #0002;}
+  .pin-ic{width:16px;height:16px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;color:#fff;font-size:10px;}
+  .big{font-size:19px;font-weight:800;}
+  .ov-row{display:flex;align-items:center;justify-content:space-between;padding:11px 12px;border-radius:10px;margin-bottom:7px;}
+  .ov-row .n{font-size:23px;font-weight:800;}
+  .ov-row .u{font-size:11px;color:var(--muted);margin-left:4px;}
+  .sumgrid{display:grid;grid-template-columns:1fr 1fr;gap:9px;}
+  .sumcard{border-radius:12px;padding:12px;color:#fff;box-shadow:0 4px 12px rgba(0,0,0,.12);position:relative;overflow:hidden;}
+  .sumcard::after{content:"";position:absolute;right:-14px;top:-14px;width:54px;height:54px;border-radius:50%;background:rgba(255,255,255,.14);}
+  .sumcard .t{font-size:11px;opacity:.95;} .sumcard .n{font-size:25px;font-weight:800;}
+  .sumcard .p{font-size:11px;opacity:.9;}
+  .exrow{display:grid;grid-template-columns:auto 1fr auto auto;gap:8px;align-items:center;font-size:12.5px;padding:6px 2px;border-bottom:1px dashed var(--border);cursor:pointer;}
+  .badge-ex{background:var(--exceed);color:#fff;font-size:10.5px;padding:2px 7px;border-radius:5px;font-weight:700;}
+  /* editor drawer */
+  #drawer{position:absolute;top:12px;right:12px;width:360px;max-width:calc(100% - 24px);max-height:calc(100% - 24px);
+    background:var(--glass);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border:1px solid var(--glassBd);border-radius:16px;
+    box-shadow:0 14px 40px rgba(0,0,0,.32);z-index:1100;transform:translateX(calc(100% + 30px));opacity:0;pointer-events:none;
+    transition:transform .25s cubic-bezier(.4,0,.2,1),opacity .2s;overflow:auto;padding:15px;}
+  #drawer.open{transform:translateX(0);opacity:1;pointer-events:auto;}
+  .hidden{display:none!important;}
+  label.fld{display:block;margin:8px 0 3px;font-size:12px;color:var(--muted);}
+  input,select,textarea{width:100%;padding:7px;border-radius:6px;border:1px solid var(--inBd);background:var(--inBg);color:var(--text);font-family:inherit;font-size:13px;}
+  .row{display:flex;gap:8px;} .row>*{flex:1;}
+  .reading-row{display:flex;gap:6px;align-items:center;margin-bottom:5px;}
+  .reading-row .pn{flex:2;} .reading-row .pv{flex:1;}
+  .muted{color:var(--muted);font-size:12px;}
+  .param-std{font-size:11px;color:var(--muted);}
+  .toprow{display:flex;justify-content:space-between;align-items:center;gap:8px;}
+  .badge{font-size:11px;padding:2px 8px;border-radius:10px;color:#222;font-weight:700;}
+  details{margin-bottom:8px;} summary{cursor:pointer;font-weight:600;padding:4px 0;color:var(--text);}
+  .ec{background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:8px;margin-bottom:8px;}
+  .pin{position:relative;} .leaflet-div-icon{background:transparent;border:none;}
+  .map-legend{background:var(--legBg);border-radius:9px;padding:8px 10px;box-shadow:0 2px 8px #0003;font-size:12px;color:var(--text);line-height:1.5;max-width:230px;}
+  .map-legend h4{margin:0 0 4px;font-size:12px;color:var(--text);display:flex;justify-content:space-between;gap:8px;}
+  .map-legend .lg{display:flex;align-items:center;gap:7px;margin:3px 0;}
+  .map-legend .body.collapsed{display:none;}
+  .map-legend .grp{margin-top:6px;font-weight:700;font-size:11px;color:var(--muted);}
+  .leaflet-bottom.leaflet-left{display:flex;flex-direction:row;align-items:flex-end;}
+  #map.nolabels .leaflet-tooltip.lbl{display:none!important;}
+  footer{display:flex;align-items:center;gap:16px;padding:5px 16px;background:var(--panel2);border-top:1px solid var(--border);font-size:11.5px;color:var(--muted);}
+  ::-webkit-scrollbar{width:8px;height:8px;} ::-webkit-scrollbar-thumb{background:#9bbcaa;border-radius:5px;}
+  @media(max-width:1050px){
+    html,body{height:auto;overflow:auto;}
+    main{grid-template-columns:1fr;height:auto;}
+    #map{flex:none;height:60vh;min-height:320px;}
+    .rightcol{overflow:visible;}
+    .bottomRow{height:auto;grid-template-columns:1fr;}
+    .bottomRow .card{min-height:240px;}
+    .chartwrap{min-height:210px;}
+    header{flex-wrap:wrap;gap:8px;padding:8px 12px;}
+    header h1{font-size:16px;} header .sub{font-size:10px;}
+    .headtools{flex-wrap:wrap;justify-content:flex-end;}
+    #drawer{width:calc(100% - 24px);max-height:calc(100% - 18px);}
+    button{padding:7px 12px;}
+  }
+</style>
+</head>
+<body>
+  <header>
+    <div class="logo"><img src="logo.png" alt="TEGH" onerror="this.outerHTML='<b style=&quot;font-size:20px&quot;>▲ TEGH</b>'"></div>
+    <div style="text-align:center;flex:1;">
+      <h1 data-i18n="title">Environmental Monitoring Dashboard</h1>
+      <div class="sub" data-i18n="sub">Real-time Environmental Quality Monitoring for Sustainable Industrial Estate</div>
+    </div>
+    <div class="headtools">
+      <div class="teil">🌿 TEIL</div>
+      <button id="btnLang">🌐 EN</button>
+      <button id="btnTheme">🌙</button>
+      <button class="accent" id="btnSetup">⚙️ Setup ▾</button>
+      <div class="setup-panel hidden" id="setupPanel">
+        <button class="primary" id="btnAdd" data-i18n="addPoint">➕ เพิ่มจุดตรวจ</button>
+        <button id="btnAuto" data-i18n="autoCalc">⚙️ คำนวณสถานะอัตโนมัติ</button>
+        <button id="btnExport" data-i18n="exportJson">⬇️ ส่งออก JSON</button>
+        <button id="btnImport" data-i18n="importJson">⬆️ นำเข้า JSON</button>
+        <button id="btnCsv" data-i18n="exportCsv">📄 ส่งออก CSV</button>
+        <button id="btnUploadTrend" data-i18n="uploadTrend">📈 อัปโหลดแนวโน้ม (CSV)</button>
+        <button id="btnExportTrend" data-i18n="exportTrend">📤 Export แนวโน้ม (CSV)</button>
+        <input type="file" id="fileTrend" accept=".csv,text/csv" class="hidden">
+        <button id="btnToggleBottom">📉 ซ่อนรายงานล่าง</button>
+        <button class="danger small" id="btnReset" data-i18n="reset">รีเซ็ต</button>
+        <input type="file" id="fileImport" accept=".json" class="hidden">
+      </div>
+    </div>
+  </header>
+  <div class="accentstrip"></div>
+
+  <main>
+    <div class="leftcol">
+      <div id="map"></div>
+      <div class="bottomRow">
+        <div class="card"><h3 data-i18n="stationsTitle">🛰️ สถานีตรวจวัด</h3><div class="body" id="stations"></div></div>
+        <div class="card"><h3 data-i18n="distTitle">🍩 สัดส่วนสถานะ</h3><div class="chartwrap"><canvas id="chartDist"></canvas></div></div>
+        <div class="card"><h3 data-i18n="trend6m">📈 แนวโน้มย้อนหลัง</h3><div class="chartwrap"><canvas id="chartTrend6"></canvas></div></div>
+      </div>
+    </div>
+    <div class="rightcol">
+      <div class="card">
+        <div class="toprow"><h3 style="margin:0" data-i18n="overviewTitle">📍 ภาพรวมสถานะการตรวจวัด</h3><span class="muted" id="ovDate"></span></div>
+        <div class="body" id="overview" style="margin-top:8px"></div>
+      </div>
+      <div class="card">
+        <h3 data-i18n="summaryTitle">📊 สรุป</h3>
+        <div class="sumgrid" id="summaryCards"></div>
+      </div>
+      <div class="card" style="flex:1;">
+        <div class="toprow"><h3 style="margin:0" data-i18n="latestExceed">⚠️ รายการเกินมาตรฐาน</h3>
+          <button class="small" id="btnViewAll" data-i18n="viewAll">ดูทั้งหมด ▸</button></div>
+        <div class="body" id="exceedList" style="margin-top:8px"></div>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <span id="ftLast"></span>
+    <span style="flex:1;text-align:center" data-i18n="footerMid">Monitor • Manage • Improve for a Better Environment</span>
+    <span data-i18n="poweredBy">Powered by TEIL Environmental Monitoring System</span>
+  </footer>
+
+  <!-- EDITOR DRAWER -->
+  <aside id="drawer">
+    <div class="toprow" style="margin-bottom:8px;">
+      <h3 id="edTitle" style="margin:0;font-size:16px;">จุดตรวจ</h3>
+      <div><button class="danger small" id="btnDel" data-i18n="deletePoint">ลบ</button>
+        <button class="small" id="btnCloseDrawer">✕</button></div>
+    </div>
+    <label class="fld" data-i18n="fName">ชื่อจุดตรวจ</label>
+    <input id="edName" data-i18n-ph="fNamePh" placeholder="เช่น CP1 / คลองโสน">
+    <div class="row">
+      <div><label class="fld" data-i18n="fType">ประเภทจุดตรวจ</label><select id="edCat"></select></div>
+      <div><label class="fld" data-i18n="fStatus">สถานะผลการตรวจ</label>
+        <select id="edStatus">
+          <option value="nodata" data-i18n="stNodata">⚪ ไม่มีตัวอย่าง</option>
+          <option value="pass" data-i18n="stPass">🟢 ผ่าน</option>
+          <option value="watch" data-i18n="stWatch">🟡 เฝ้าระวัง</option>
+          <option value="exceed" data-i18n="stExceed">🔴 เกินมาตรฐาน</option>
+        </select></div>
+    </div>
+    <label class="fld" data-i18n="fNote">หมายเหตุ / รายละเอียด</label>
+    <textarea id="edNote" rows="2" data-i18n-ph="fNotePh" placeholder="รายละเอียดเพิ่มเติม"></textarea>
+    <div class="row" style="margin-top:6px;">
+      <div><label class="fld">Latitude</label><input id="edLat"></div>
+      <div><label class="fld">Longitude</label><input id="edLng"></div>
+    </div>
+    <label class="fld" data-i18n="pointImage">📷 ภาพจุดตรวจ</label>
+    <div id="imgPreview"></div>
+    <input type="file" id="edImg" accept="image/*">
+    <button class="small danger hidden" id="btnRemoveImg" style="margin-top:6px;" data-i18n="removeImage">🗑 ลบรูป</button>
+    <details class="ec" style="margin-top:12px;">
+      <summary style="font-size:14px;font-weight:700;" data-i18n="recordTitle">➕ บันทึกผลการตรวจวัด</summary>
+      <div style="margin-top:8px;">
+        <label class="fld" data-i18n="sampleDate">วันที่เก็บตัวอย่าง</label>
+        <input type="date" id="rdDate">
+        <div id="paramInputs"></div>
+        <div id="customInputs"></div>
+        <button class="small" id="btnAddCustom" style="margin-top:6px;" data-i18n="addCustom">+ เพิ่มช่องค่ากำหนดเอง</button>
+        <div style="margin-top:8px;"><button class="primary" id="btnSaveReading" data-i18n="saveReading">บันทึกผล + คำนวณสถานะ</button></div>
+      </div>
+    </details>
+    <details class="ec">
+      <summary style="font-size:14px;font-weight:700;" data-i18n="deviceTitle">🔌 เชื่อมต่ออุปกรณ์ (API)</summary>
+      <div style="margin-top:8px;">
+        <label class="fld" data-i18n="apiUrlL">API Endpoint (URL)</label>
+        <input id="edApiUrl" placeholder="https://device.example/api/latest">
+        <label class="fld" data-i18n="apiKeyL">API Key / Token</label>
+        <input id="edApiKey" placeholder="(optional)">
+        <div style="margin-top:8px;"><button class="accent" id="btnFetchDevice" data-i18n="fetchDevice">⬇️ ดึงข้อมูลจากอุปกรณ์</button></div>
+        <div class="muted" id="apiStatus" style="margin-top:6px;"></div>
+        <div class="muted" style="margin-top:6px;font-size:11px;line-height:1.4;" data-i18n="apiHint">รองรับ JSON ที่คีย์ตรงกับรหัสค่าตรวจ</div>
+      </div>
+    </details>
+    <details class="ec" id="trendDetails">
+      <summary style="font-size:14px;font-weight:700;" data-i18n="trendTitle">แนวโน้มค่าตรวจวัด</summary>
+      <div style="margin-top:8px;">
+        <select id="trendParam"></select>
+        <div style="position:relative;height:170px;margin-top:8px;"><canvas id="chartParam"></canvas></div>
+      </div>
+    </details>
+    <details open>
+      <summary><span data-i18n="history">ประวัติผลการตรวจ</span> (<span id="histCount">0</span>)</summary>
+      <div id="history"></div>
+    </details>
+  </aside>
+
+<script>
+/* ============ i18n ============ */
+const I18N={
+ th:{title:"แดชบอร์ดเฝ้าระวังคุณภาพสิ่งแวดล้อม",sub:"ระบบติดตามคุณภาพสิ่งแวดล้อมแบบเรียลไทม์เพื่อนิคมอุตสาหกรรมที่ยั่งยืน",
+  setup:"⚙️ Setup ▾",setupOpen:"⚙️ Setup ▴",addPoint:"➕ เพิ่มจุดตรวจ",addPointActive:"🖱️ คลิกบนแผนที่...",
+  autoCalc:"⚙️ คำนวณสถานะอัตโนมัติ",exportJson:"⬇️ ส่งออก JSON",importJson:"⬆️ นำเข้า JSON",exportCsv:"📄 ส่งออก CSV",reset:"รีเซ็ต",
+  hideReports:"📉 ซ่อนรายงานล่าง",showReports:"📈 แสดงรายงานล่าง",
+  uploadTrend:"📈 อัปโหลดแนวโน้ม (CSV)",uploadDone:"นำเข้าข้อมูลแนวโน้มแล้ว",uploadNone:"ไม่พบจุดที่ตรงกับชื่อในไฟล์",readingsAdded:"รายการ",exportTrend:"📤 Export แนวโน้ม (CSV)",
+  deletePoint:"ลบ",fName:"ชื่อจุดตรวจ",fNamePh:"เช่น CP1 / คลองโสน",fType:"ประเภทจุดตรวจ",fStatus:"สถานะผลการตรวจ",
+  fNote:"หมายเหตุ / รายละเอียด",fNotePh:"รายละเอียดเพิ่มเติม",
+  stNodata:"⚪ ไม่มีตัวอย่าง",stPass:"🟢 ผ่าน",stWatch:"🟡 เฝ้าระวัง",stExceed:"🔴 เกินมาตรฐาน",
+  recordTitle:"➕ บันทึกผลการตรวจวัด",sampleDate:"วันที่เก็บตัวอย่าง",addCustom:"+ เพิ่มช่องค่ากำหนดเอง",
+  saveReading:"บันทึกผล + คำนวณสถานะ",history:"ประวัติผลการตรวจ",trendTitle:"แนวโน้มค่าตรวจวัด",
+  deviceTitle:"🔌 เชื่อมต่ออุปกรณ์ (API)",apiUrlL:"API Endpoint (URL)",apiKeyL:"API Key / Token",fetchDevice:"⬇️ ดึงข้อมูลจากอุปกรณ์",
+  apiHint:"รองรับ JSON ที่คีย์ตรงกับรหัสค่าตรวจ เช่น {\"pH\":7.1,\"cod\":45} หรือ {\"date\":\"2026-06-30\",\"values\":{...}}",
+  apiNeedUrl:"กรุณาใส่ URL ของอุปกรณ์",fetching:"กำลังดึงข้อมูล...",fetchOk:"ดึงข้อมูลสำเร็จ ปรับค่าในฟอร์มแล้ว",fetchErr:"ดึงข้อมูลไม่สำเร็จ",fetchNone:"เชื่อมต่อได้แต่ไม่พบค่าที่ตรงรหัสพารามิเตอร์",
+  pointImage:"📷 ภาพจุดตรวจ",removeImage:"🗑 ลบรูป",
+  overviewTitle:"📍 ภาพรวมสถานะการตรวจวัด",summaryTitle:"📊 สรุป",latestExceed:"⚠️ รายการเกินมาตรฐาน",viewAll:"ดูทั้งหมด ▸",
+  stationsTitle:"🛰️ สถานีตรวจวัด",distTitle:"🍩 สัดส่วนสถานะ",trend6m:"📈 แนวโน้มย้อนหลัง",
+  noData:"ไม่มีข้อมูล",withinStd:"อยู่ในเกณฑ์มาตรฐาน",alertS:"เฝ้าระวัง",exceedS:"เกินมาตรฐาน",points:"จุด",totalPoints:"จุดตรวจทั้งหมด",
+  legend:"คำอธิบายสัญลักษณ์",legendStatus:"สถานะผลการตรวจ",legendType:"ประเภทจุดตรวจ (วงใน)",
+  descNodata:"ไม่มีตัวอย่าง : ไม่มีผลการตรวจ",descPass:"ผ่าน : อยู่ในเกณฑ์มาตรฐาน",descWatch:"เฝ้าระวัง : มีแนวโน้มสูงขึ้น",descExceed:"ไม่ผ่าน : เกินค่ามาตรฐาน",
+  layerTitle:"เลเยอร์แผนที่",overlays:"ชั้นข้อมูลเสริม",weather:"🌧️ สภาพอากาศ (เรดาร์ฝน)",airquality:"🌫️ คุณภาพอากาศ (AQI)",
+  std:"มาตรฐาน",maxStd:"มาตรฐานสูงสุด",minStd:"มาตรฐานต่ำสุด",paramSet:"ชุดค่า",custNamePh:"ชื่อค่า",custValPh:"ค่า",
+  noReadings:"ยังไม่มีผลการตรวจ",noDataOpt:"— ไม่มีข้อมูล —",
+  alertFill:"กรุณากรอกค่าอย่างน้อย 1 ช่อง",confirmDel:"ลบจุดนี้?",confirmReset:"รีเซ็ตกลับเป็นจุดเริ่มต้น? ข้อมูลปัจจุบันจะหายไป",
+  autoDone:"คำนวณสถานะจากผลล่าสุดของทุกจุดแล้ว",importOk:"นำเข้าข้อมูลสำเร็จ",importBad:"ไฟล์ไม่ถูกต้อง",
+  waqiPrompt:"ใส่ WAQI token (ขอฟรีที่ aqicn.org/data-platform/token)",weatherErr:"โหลดข้อมูลสภาพอากาศไม่สำเร็จ",
+  langBtn:"🌐 EN",lastUpdated:"อัปเดตล่าสุด",footerMid:"Monitor • Manage • Improve เพื่อสิ่งแวดล้อมที่ดีขึ้น",poweredBy:"ขับเคลื่อนโดยระบบ TEIL Environmental Monitoring"},
+ en:{title:"Environmental Monitoring Dashboard",sub:"Real-time Environmental Quality Monitoring for Sustainable Industrial Estate",
+  setup:"⚙️ Setup ▾",setupOpen:"⚙️ Setup ▴",addPoint:"➕ Add point",addPointActive:"🖱️ Click on the map...",
+  autoCalc:"⚙️ Auto-calc status",exportJson:"⬇️ Export JSON",importJson:"⬆️ Import JSON",exportCsv:"📄 Export CSV",reset:"Reset",
+  hideReports:"📉 Hide bottom panels",showReports:"📈 Show bottom panels",
+  uploadTrend:"📈 Upload trend (CSV)",uploadDone:"Trend data imported",uploadNone:"No points matched names in file",readingsAdded:"readings",exportTrend:"📤 Export trend (CSV)",
+  deletePoint:"Delete",fName:"Point name",fNamePh:"e.g. CP1 / Khlong Son",fType:"Point type",fStatus:"Result status",
+  fNote:"Note / details",fNotePh:"Additional details",
+  stNodata:"⚪ No sample",stPass:"🟢 Pass",stWatch:"🟡 Watch",stExceed:"🔴 Exceed",
+  recordTitle:"➕ Record measurement",sampleDate:"Sampling date",addCustom:"+ Add custom field",
+  saveReading:"Save + calc status",history:"Measurement history",trendTitle:"Measurement trend",
+  deviceTitle:"🔌 Device connection (API)",apiUrlL:"API Endpoint (URL)",apiKeyL:"API Key / Token",fetchDevice:"⬇️ Fetch from device",
+  apiHint:"Accepts JSON keyed by parameter id, e.g. {\"pH\":7.1,\"cod\":45} or {\"date\":\"2026-06-30\",\"values\":{...}}",
+  apiNeedUrl:"Please enter the device URL",fetching:"Fetching...",fetchOk:"Fetched — form values updated",fetchErr:"Fetch failed",fetchNone:"Connected but no values matched parameter ids",
+  pointImage:"📷 Point image",removeImage:"🗑 Remove",
+  overviewTitle:"📍 Monitoring Status Overview",summaryTitle:"📊 Summary",latestExceed:"⚠️ Latest Exceedances",viewAll:"View all ▸",
+  stationsTitle:"🛰️ Monitoring Stations",distTitle:"🍩 Distribution of Status",trend6m:"📈 Trend over time",
+  noData:"No Data",withinStd:"Within Standard",alertS:"Alert",exceedS:"Exceed Standard",points:"Points",totalPoints:"Total Monitoring Points",
+  legend:"Legend",legendStatus:"Result status",legendType:"Point type (inner dot)",
+  descNodata:"No sample : no measurement",descPass:"Pass : within standard",descWatch:"Watch : rising trend",descExceed:"Fail : exceeds standard",
+  layerTitle:"Map layers",overlays:"Overlays",weather:"🌧️ Weather (rain radar)",airquality:"🌫️ Air quality (AQI)",
+  std:"Std",maxStd:"Max standard",minStd:"Min standard",paramSet:"Set",custNamePh:"Field name",custValPh:"Value",
+  noReadings:"No measurements yet",noDataOpt:"— no data —",
+  alertFill:"Please enter at least one value",confirmDel:"Delete this point?",confirmReset:"Reset to defaults? Current data will be lost.",
+  autoDone:"Recalculated status from latest readings.",importOk:"Imported successfully",importBad:"Invalid file",
+  waqiPrompt:"Enter WAQI token (free at aqicn.org/data-platform/token)",weatherErr:"Failed to load weather data",
+  langBtn:"🌐 ไทย",lastUpdated:"Last updated",footerMid:"Monitor • Manage • Improve for a Better Environment",poweredBy:"Powered by TEIL Environmental Monitoring System"}
+};
+let lang=localStorage.getItem('tegh_lang')||'th';
+let theme=localStorage.getItem('tegh_theme')||'light';
+function t(k){return (I18N[lang]&&I18N[lang][k])||I18N.th[k]||k;}
+
+/* ============ Catalogs ============ */
+const CATS = {
+  air:        {th:"สถานีตรวจวัดคุณภาพอากาศ",en:"Air Quality Station", color:"#6bb6cf", set:"air"},
+  public:     {th:"Check point สาธารณะ",     en:"Public Check Point",  color:"#4f9cb3", set:"water"},
+  surface_eia:{th:"SW น้ำผิวดิน EIA",         en:"SW Surface Water (EIA)",color:"#2f7d8f", set:"water"},
+  groundwater:{th:"GW น้ำใต้ดิน",             en:"GW Groundwater",      color:"#2f5e66", set:"metal"},
+  plantation: {th:"Check point ในสวน",        en:"Plantation Check Point",color:"#5cb287", set:"water"},
+  online:     {th:"COD/BOD Online",           en:"COD/BOD Online",      color:"#4aa58c", set:"water"},
+};
+function clabel(c){return lang==='th'?CATS[c].th:CATS[c].en;}
+const PARAMS = {
+  water:[["pH","pH","",5.5,9.0],["temp","อุณหภูมิ","°C",null,40],["ec","EC","µS/cm",null,null],["cod","COD","mg/L",null,120],
+    ["bod","BOD","mg/L",null,20],["turb","ความขุ่น","NTU",null,null],["tss","TSS","mg/L",null,50],["tds","TDS","mg/L",null,3000],["oil","Oil & Grease","mg/L",null,5]],
+  air:[["pm25","PM2.5","µg/m³",null,37.5],["pm10","PM10","µg/m³",null,120],["tsp","TSP","mg/m³",null,0.33],["so2","SO₂","ppb",null,120],
+    ["no2","NO₂","ppb",null,170],["co","CO","ppm",null,9],["o3","O₃","ppb",null,70]],
+  metal:[["as","Arsenic (As)","mg/L",null,0.01],["ba","Barium (Ba)","mg/L",null,1.0],["cd","Cadmium (Cd)","mg/L",null,0.003],["cr6","Cr⁶⁺","mg/L",null,0.05],
+    ["pb","Lead (Pb)","mg/L",null,0.01],["mn","Manganese (Mn)","mg/L",null,0.5],["fe","Iron (Fe)","mg/L",null,0.5],["hg","Mercury (Hg)","mg/L",null,0.001]],
+};
+const PLABEL_EN={"อุณหภูมิ":"Temperature","ความขุ่น":"Turbidity"};
+function plabel(pr){return lang==='en'?(PLABEL_EN[pr[1]]||pr[1]):pr[1];}
+const ST = {nodata:{th:"ไม่มีตัวอย่าง",en:"No sample",c:"#9aa6b2"},pass:{th:"ผ่าน",en:"Pass",c:"#4CAF50"},
+  watch:{th:"เฝ้าระวัง",en:"Watch",c:"#F2B600"},exceed:{th:"เกินมาตรฐาน",en:"Exceed",c:"#E04848"}};
+function stlabel(k){return lang==='th'?ST[k].th:ST[k].en;}
+
+/* ============ Seed ============ */
+const C_LAT=13.118, C_LNG=101.375, DPP=0.0000828, CX=725, CY=580;
+const OLD_CENTER={lat:12.975,lng:101.555};
+function px(x,y){return [C_LAT-(y-CY)*DPP, C_LNG+(x-CX)*DPP];}
+const SEED=[
+  ["SW3","surface_eia",370,150,"pass"],["SW2 / คลองโสน","surface_eia",330,210,"pass"],["SW1","surface_eia",235,270,"pass"],
+  ["CP1","plantation",530,140,"pass"],["GW1","groundwater",470,215,"watch"],["คลองหน้า TEBP","public",600,200,"pass"],
+  ["CP2","plantation",545,275,"pass"],["CP3","plantation",560,330,"pass"],["GW2","groundwater",620,345,"watch"],
+  ["COD/BOD Online","online",420,345,"pass"],["คลองเขาชก1","public",880,310,"pass"],["คลองเขาชก2","public",900,445,"watch"],
+  ["CP24","plantation",230,440,"pass"],["GW4","groundwater",345,455,"watch"],["CP23","plantation",305,560,"pass"],
+  ["GW3","groundwater",440,520,"watch"],["สถานีตรวจวัดคุณภาพอากาศ","air",560,505,"pass"],
+  ["CP22","plantation",400,595,"pass"],["CP4","plantation",560,545,"pass"],["CP5","plantation",600,620,"exceed"],
+  ["CP6","plantation",505,635,"watch"],["CP7","plantation",570,660,"pass"],["CP21","plantation",225,620,"pass"],
+  ["คลองมาด","public",885,665,"watch"],["CP19","plantation",180,710,"pass"],["CP18","plantation",245,710,"pass"],
+  ["CP17","plantation",305,710,"pass"],["CP16","plantation",370,710,"pass"],["CP20","plantation",100,765,"pass"],
+  ["CP15","plantation",220,815,"pass"],["CP14","plantation",330,830,"pass"],["คลองยายบุ้ง","public",855,810,"watch"],
+  ["CP13","plantation",290,910,"pass"],["CP12","plantation",360,990,"pass"],["CP8","plantation",605,975,"exceed"],
+  ["CP9","plantation",520,1025,"pass"],["CP10","plantation",430,1045,"exceed"],["CP11","plantation",355,1095,"exceed"],
+];
+function blank(){return {center:{lat:C_LAT,lng:C_LNG}, points: SEED.map((s,i)=>{const [lat,lng]=px(s[2],s[3]);
+  return {id:"p"+(i+1),name:s[0],cat:s[1],lat,lng,status:s[4],note:"",readings:[]};})};}
+function load(){let d=null;try{const r=localStorage.getItem("tegh_env");if(r)d=JSON.parse(r);}catch(e){}
+  if(!d)return blank();const cur=d.center||OLD_CENTER;
+  if(Math.abs(cur.lat-C_LAT)>1e-4||Math.abs(cur.lng-C_LNG)>1e-4){const dla=C_LAT-cur.lat,dln=C_LNG-cur.lng;
+    d.points.forEach(p=>{p.lat+=dla;p.lng+=dln;});d.center={lat:C_LAT,lng:C_LNG};localStorage.setItem("tegh_env",JSON.stringify(d));}
+  return d;}
+function save(){localStorage.setItem("tegh_env",JSON.stringify(DATA));}
+let DATA=load();
+
+/* ===== ข้อมูลจริงจาก Excel: ชีต "ผลCheck Poin & แหล่งน้ำสาธารณะ" รอบ 1-4 =====
+   ลำดับค่า: [pH, Temp, EC, COD, Turbidity, TSS, TDS, Oil&Grease]  (N.D. = 0) */
+const IMPORT_IDS=["pH","temp","ec","cod","turb","tss","tds","oil"];
+const ROUNDS=[
+ {date:"2026-01-19",data:{
+  "คลองหน้า TEBP":[7.03,26.3,4690,324,390,200,2346,0],"คลองยายบุ้ง":[8.04,25.8,4803,286,7,16,2402,0],
+  "คลองมาด":[7.41,26,2341,123,2.7,18,1170,0],"คลองเขาชก2":[7.66,26.1,3278,354,30,45,1639,0],"คลองเขาชก1":[7.26,26.1,218,58,1.5,8,609,0],
+  "CP1":[7.33,25.6,862,70,2.5,2,4083,0],"CP2":[7.4,25.1,885,85,9.5,22,4425,0],"CP3":[7.5,26,4157,137,31,34,2079,0],
+  "CP6":[7.47,25.2,4574,277,24,44,2286,0],"CP8":[7.6,25.2,5072,410,110,70,2537,0],"CP10":[7.47,24.6,8741,906,110,160,4369,0],
+  "CP11":[8.47,24.8,13940,2820,280,310,6974,0],"CP13":[7.13,25.3,257,43,23,12,128,0],"CP19":[7.45,25.2,2766,205,45,12,1383,0],"CP22":[7.72,25.2,342,48,3.9,4,171,0]}},
+ {date:"2026-02-24",data:{
+  "คลองหน้า TEBP":[7.59,28.4,1991,329,36.2,44,995,0],"คลองยายบุ้ง":[8.01,28.3,3784,295,1.9,8,189,0],"คลองเขาชก2":[7.46,28.4,1411,153,76.2,46,706,0],
+  "CP1":[8.6,28.1,767,75,5.4,20,384,0],"CP2":[8.64,28.2,785,79,4.6,16,400,0],"CP3":[2.55,24,3342,167,14.3,32,1830,0],
+  "CP4":[6.26,28,1722,160,33,116,869,0],"CP6":[7.63,28.8,4162,799,23.5,22,2081,0],"CP7":[7.65,28.1,2723,212,28.1,18,1362,0],
+  "CP8":[7.8,28,4954,365,106,6,2479,0],"CP10":[7.64,27.9,6821,1221,80.7,122,3409,0],"CP11":[8.75,28.1,10170,223,223,300,5086,0],
+  "CP13":[7.32,28.1,221,34,8.6,6,111,0],"CP20":[7.72,28,4351,564,89.9,40,2175,0],"CP22":[7.3,27.9,247,59,3.3,8,124,0]}},
+ {date:"2026-03-26",data:{
+  "คลองหน้า TEBP":[7.26,22.9,1.3,101,28.6,40,683,0],"คลองเขาชก2":[7.2,21.1,1.9,203,904,720,1614,0],
+  "CP1":[8.01,21.1,0.9,48,11.4,4,461,0],"CP2":[7.22,23.7,1.2,85,17.1,42,607,0],"CP3":[7.94,24,3.3,85,12.7,16,1669,0],
+  "CP4":[6.77,24.3,3,124,27,48,1545,0],"CP5":[6.97,23.5,3,108,186,200,1547,0],"CP8":[7.7,26,5,348,174,24,2962,0],
+  "CP10":[7.32,25.5,7,532,67,52,3918,0],"CP11":[8.72,25.6,11,1706,162,168,5159,0],"CP13":[7.14,27.1,227,16,18,8,113,0],"CP22":[7.1,26.2,353,14,14,32,176,0]}},
+ {date:"2026-04-27",data:{
+  "คลองหน้า TEBP":[8.6,28.6,1,244,29.3,64,685,6],"คลองมาด":[7.05,29.5,3,182,5.9,20,1647,5],"คลองเขาชก2":[7.72,24.2,3,300,29.9,64,1671,2],
+  "CP1":[8.53,26.5,0.9,64,20,10,485,4],"CP2":[8.8,25.6,0.9,67,18,24,494,3],"CP3":[7.79,28.4,1,159,72,92,1864,6],
+  "CP4":[7.15,23.7,3,314,594,284,1536,6],"CP5":[7.16,23.6,3,306,534,372,1528,6],"CP6":[7.93,24.8,5,414,592,596,2781,2],
+  "CP7":[7.42,25.4,2,280,915,628,1088,3],"CP8":[7.92,25.9,10,1046,933,980,5194,4],"CP9":[7.87,27.3,5,398,82.7,96,2194,2],
+  "CP10":[8.5,26,6,550,146,100,4640,5],"CP11":[8.57,24,6,670,126,140,3159,6],"CP13":[7.86,28.4,0.3,36.1,4,36,1650,4],
+  "CP18":[7.16,28.4,2,156,16.7,10,1202,3],"CP19":[8.7,26.1,3,456,240,212,1884,2],"CP22":[8.7,28.5,0.5,46,35,16,292,3],"CP23":[6.98,27.1,0.6,116,5,12,329,5]}},
+];
+function applyImports(){
+  if(DATA.importedRounds)return;
+  DATA.points.forEach(p=>{
+    ROUNDS.forEach(rd=>{
+      const row=rd.data[p.name];
+      if(row && !p.readings.some(r=>r.date===rd.date)){
+        const vals={};IMPORT_IDS.forEach((id,i)=>{if(row[i]!=null)vals[id]=row[i];});
+        const reading={date:rd.date,vals,custom:{}};
+        reading.status=evalStatus(reading,"water");
+        p.readings.push(reading);
+      }
+    });
+    if(p.readings.length){p.readings.sort((a,b)=>a.date<b.date?1:-1);p.status=p.readings[0].status;}
+  });
+  DATA.importedRounds=true;save();
+}
+
+/* ============ Map ============ */
+const map=L.map('map',{zoomControl:true}).setView([C_LAT,C_LNG],14);
+const satellite=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:19,attribution:'Esri'});
+const labelsLayer=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',{maxZoom:19,opacity:0.9});
+const hybrid=L.layerGroup([satellite,labelsLayer]);
+const street=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'});
+const topo=L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',{maxZoom:17,attribution:'© OpenTopoMap'});
+const terrain=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Terrain_Base/MapServer/tile/{z}/{y}/{x}',{maxZoom:13,attribution:'Esri'});
+const light=L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{maxZoom:19,attribution:'© CARTO'});
+const BASE=[
+  {th:"🛰️ ดาวเทียม + ป้ายชื่อ",en:"🛰️ Satellite + labels",layer:hybrid},
+  {th:"🛰️ ดาวเทียม (ล้วน)",en:"🛰️ Satellite",layer:satellite},
+  {th:"🗺️ แผนที่ถนน (OSM)",en:"🗺️ Street (OSM)",layer:street},
+  {th:"⛰️ ภูมิประเทศ (Topo)",en:"⛰️ Topographic",layer:topo},
+  {th:"🌄 Terrain",en:"🌄 Terrain",layer:terrain},
+  {th:"◻️ พื้นหลังอ่อน",en:"◻️ Light",layer:light},
+];
+hybrid.addTo(map);
+let currentBaseIdx=0, weatherOn=false, aqiOn=false, weatherLayer=null, aqiLayer=null;
+function setBase(i){BASE.forEach(b=>map.removeLayer(b.layer));BASE[i].layer.addTo(map);currentBaseIdx=i;
+  if(weatherLayer)weatherLayer.bringToFront(); if(aqiLayer)aqiLayer.bringToFront();}
+function toggleWeather(on){weatherOn=on;
+  if(on){fetch('https://api.rainviewer.com/public/weather-maps.json').then(r=>r.json()).then(d=>{
+    const fr=d.radar.past[d.radar.past.length-1];weatherLayer=L.tileLayer(d.host+fr.path+'/256/{z}/{x}/{y}/2/1_1.png',{opacity:0.6}).addTo(map);
+  }).catch(()=>{alert(t('weatherErr'));weatherOn=false;const c=document.getElementById('ovWeather');if(c)c.checked=false;});}
+  else if(weatherLayer){map.removeLayer(weatherLayer);weatherLayer=null;}}
+function toggleAQI(on){aqiOn=on;
+  if(on){let tok=localStorage.getItem('waqi_token');
+    if(!tok){tok=prompt(t('waqiPrompt'));if(!tok){aqiOn=false;const c=document.getElementById('ovAqi');if(c)c.checked=false;return;}localStorage.setItem('waqi_token',tok);}
+    aqiLayer=L.tileLayer('https://tiles.waqi.info/tiles/usepa-aqi/{z}/{x}/{y}.png?token='+tok,{opacity:0.65,attribution:'WAQI'}).addTo(map);}
+  else if(aqiLayer){map.removeLayer(aqiLayer);aqiLayer=null;}}
+
+let legendCtl, layerCtl;
+function addLegendControl(){
+  if(legendCtl)map.removeControl(legendCtl);
+  legendCtl=L.control({position:'bottomleft'});
+  legendCtl.onAdd=function(){const div=L.DomUtil.create('div','map-legend');
+    const sts=Object.keys(ST).map(k=>`<div class="lg"><span class="dot" style="background:${ST[k].c}"></span> ${t('desc'+k.charAt(0).toUpperCase()+k.slice(1))}</div>`).join("");
+    const cts=Object.keys(CATS).map(k=>`<div class="lg"><span class="dot" style="background:${CATS[k].color}"></span> ${clabel(k)}</div>`).join("");
+    div.innerHTML=`<h4 style="cursor:pointer" onclick="this.parentNode.querySelector('.body').classList.toggle('collapsed')"><span>${t('legend')}</span><span>▾</span></h4>
+      <div class="body"><div class="grp">${t('legendStatus')}</div>${sts}<div class="grp">${t('legendType')}</div>${cts}</div>`;
+    L.DomEvent.disableClickPropagation(div);return div;};
+  legendCtl.addTo(map);}
+function addLayerControl(){
+  if(layerCtl)map.removeControl(layerCtl);
+  layerCtl=L.control({position:'bottomleft'});
+  layerCtl.onAdd=function(){const div=L.DomUtil.create('div','map-legend');
+    const opts=BASE.map((b,i)=>`<option value="${i}">${lang==='th'?b.th:b.en}</option>`).join("");
+    div.innerHTML=`<h4 id="layerHead" style="cursor:pointer"><span>🗺️ ${t('layerTitle')}</span><span id="layerCaret">▸</span></h4>
+      <div id="layerBox" class="body collapsed">
+        <select id="layerSelect" style="width:100%;padding:5px;font-size:12px;">${opts}</select>
+      </div>`;
+    L.DomEvent.disableClickPropagation(div);return div;};
+  layerCtl.addTo(map);
+  const sel=document.getElementById('layerSelect');sel.selectedIndex=currentBaseIdx;sel.onchange=function(){setBase(+this.value);};
+  document.getElementById('layerHead').onclick=function(){const b=document.getElementById('layerBox');b.classList.toggle('collapsed');
+    document.getElementById('layerCaret').textContent=b.classList.contains('collapsed')?'▸':'▾';};}
+
+let markers={}, selId=null, addMode=false;
+function pinIcon(p){const sc=ST[p.status].c, cc=CATS[p.cat].color;
+  const html=`<div class="pin"><svg width="22" height="30" viewBox="0 0 34 46">
+    <path d="M17 0C7.6 0 0 7.6 0 17c0 12 17 29 17 29s17-17 17-29C34 7.6 26.4 0 17 0z" fill="${sc}" stroke="#0006" stroke-width="1.4"/>
+    <circle cx="17" cy="16" r="8.5" fill="#fff"/><circle cx="17" cy="16" r="6" fill="${cc}"/></svg></div>`;
+  return L.divIcon({html,iconSize:[22,30],iconAnchor:[11,30],popupAnchor:[0,-26]});}
+function buildTooltip(p){return (p.img?`<img src="${p.img}" style="width:46px;height:34px;object-fit:cover;border-radius:4px;display:block;margin:0 auto 2px;">`:'')+p.name;}
+function drawMarkers(){
+  Object.values(markers).forEach(m=>map.removeLayer(m)); markers={};
+  DATA.points.forEach(p=>{
+    const m=L.marker([p.lat,p.lng],{icon:pinIcon(p),draggable:true}).addTo(map);
+    m.bindTooltip(buildTooltip(p),{permanent:true,direction:'right',offset:[4,-12],className:'lbl'});
+    m.on('click',()=>selectPoint(p.id));
+    m.on('dragend',e=>{const ll=e.target.getLatLng();p.lat=ll.lat;p.lng=ll.lng;save();if(selId===p.id)fillEditor();});
+    markers[p.id]=m;});}
+map.on('click',e=>{if(!addMode)return;
+  const id="p"+Date.now();
+  DATA.points.push({id,name:"จุดใหม่",cat:"plantation",lat:e.latlng.lat,lng:e.latlng.lng,status:"nodata",note:"",readings:[]});
+  addMode=false;document.getElementById('btnAdd').classList.remove('accent');document.getElementById('btnAdd').textContent=t('addPoint');
+  save();drawMarkers();selectPoint(id);refreshReport();});
+
+/* ============ Drawer/Editor (ลอยอยู่ในแผนที่) ============ */
+const drawerEl=document.getElementById('drawer');
+document.getElementById('map').appendChild(drawerEl);          // ย้ายแผงเข้าไปในกรอบแผนที่
+L.DomEvent.disableClickPropagation(drawerEl);
+L.DomEvent.disableScrollPropagation(drawerEl);
+function openDrawer(){drawerEl.classList.add('open');}
+function closeDrawer(){drawerEl.classList.remove('open');}
+document.getElementById('btnCloseDrawer').onclick=closeDrawer;
+/* ซ่อน/แสดงรายงานแถบล่าง (ซ่อนเป็นค่าเริ่มต้น เปิดด้วยปุ่มเบอร์เกอร์) */
+let bottomHidden=true;
+function updateBottomBtn(){const b=document.getElementById('btnToggleBottom');if(b)b.textContent=bottomHidden?t('showReports'):t('hideReports');}
+function applyBottom(){document.querySelector('.bottomRow').classList.toggle('hidden',bottomHidden);updateBottomBtn();setTimeout(()=>map.invalidateSize(),120);}
+function toggleBottom(){bottomHidden=!bottomHidden;applyBottom();}
+document.getElementById('btnToggleBottom').onclick=toggleBottom;
+/* ปุ่มเบอร์เกอร์บนแผนที่ */
+const burgerCtl=L.control({position:'topleft'});
+burgerCtl.onAdd=function(){const d=L.DomUtil.create('div','leaflet-bar');const a=L.DomUtil.create('a',null,d);
+  a.href='#';a.title='เปิด/ปิดแผงรายงาน';a.innerHTML='☰';a.style.cssText='font-size:18px;font-weight:700;text-align:center;line-height:30px;';
+  L.DomEvent.on(a,'click',function(e){L.DomEvent.stop(e);toggleBottom();});
+  L.DomEvent.disableClickPropagation(d);return d;};
+burgerCtl.addTo(map);
+/* ปุ่มเปิด/ปิดชื่อจุด */
+let labelsOn=localStorage.getItem('tegh_labels')!=='off';
+function applyLabels(){document.getElementById('map').classList.toggle('nolabels',!labelsOn);}
+const labelCtl=L.control({position:'topleft'});
+labelCtl.onAdd=function(){const d=L.DomUtil.create('div','leaflet-bar');const a=L.DomUtil.create('a',null,d);
+  a.href='#';a.title='ปิด/เปิดชื่อจุด';a.innerHTML='🏷️';a.style.cssText='font-size:15px;text-align:center;line-height:30px;';
+  L.DomEvent.on(a,'click',function(e){L.DomEvent.stop(e);labelsOn=!labelsOn;localStorage.setItem('tegh_labels',labelsOn?'on':'off');applyLabels();});
+  L.DomEvent.disableClickPropagation(d);return d;};
+labelCtl.addTo(map);
+document.getElementById('btnSetup').onclick=function(){const p=document.getElementById('setupPanel');p.classList.toggle('hidden');
+  this.textContent=p.classList.contains('hidden')?t('setup'):t('setupOpen');};
+function selectPoint(id){selId=id;openDrawer();fillEditor();
+  Object.entries(markers).forEach(([k,m])=>m.setZIndexOffset(k===id?1000:0));}
+function curr(){return DATA.points.find(p=>p.id===selId);}
+function fillEditor(){const p=curr();if(!p)return;
+  document.getElementById('edTitle').textContent=p.name;
+  document.getElementById('edName').value=p.name;
+  document.getElementById('edCat').value=p.cat;
+  document.getElementById('edStatus').value=p.status;
+  document.getElementById('edNote').value=p.note||"";
+  document.getElementById('edLat').value=p.lat.toFixed(6);
+  document.getElementById('edLng').value=p.lng.toFixed(6);
+  document.getElementById('edApiUrl').value=p.apiUrl||"";
+  document.getElementById('edApiKey').value=p.apiKey||"";
+  document.getElementById('apiStatus').textContent="";
+  const lr=p.readings[0];
+  document.getElementById('rdDate').value=lr?lr.date:new Date().toISOString().slice(0,10);
+  renderImgPreview();
+  buildParamInputs();fillTrendParam();drawParamTrend();renderHistory();}
+function renderImgPreview(){const p=curr();const w=document.getElementById('imgPreview');const rb=document.getElementById('btnRemoveImg');
+  if(p&&p.img){w.innerHTML=`<img src="${p.img}" style="width:100%;max-height:170px;object-fit:cover;border-radius:10px;border:1px solid var(--border);">`;rb.classList.remove('hidden');}
+  else{w.innerHTML="";rb.classList.add('hidden');}}
+function buildParamInputs(){const p=curr(),set=CATS[p.cat].set,box=document.getElementById('paramInputs');
+  box.innerHTML="<div class='muted' style='margin-top:6px'>"+t('paramSet')+": "+set.toUpperCase()+"</div>";
+  const last=p.readings[0];
+  PARAMS[set].forEach(pr=>{const d=document.createElement('div');d.className='reading-row';
+    const cv=(last&&last.vals&&last.vals[pr[0]]!=null)?last.vals[pr[0]]:"";
+    d.innerHTML=`<div class="pn">${plabel(pr)} <span class="param-std">${stdText(pr)}</span></div><input class="pv" data-pid="${pr[0]}" value="${cv}" placeholder="${pr[2]||''}">`;
+    box.appendChild(d);});
+  document.getElementById('customInputs').innerHTML="";}
+function stdText(pr){const u=pr[2],mn=pr[3],mx=pr[4];
+  if(mn!=null&&mx!=null)return `(${t('std')} ${mn}–${mx})`;if(mx!=null)return `(≤ ${mx} ${u})`;if(mn!=null)return `(≥ ${mn})`;return "";}
+function addCustomRow(name="",val=""){const d=document.createElement('div');d.className='reading-row';
+  d.innerHTML=`<input class="pn ck-name" placeholder="${t('custNamePh')}" value="${name}"><input class="pv ck-val" placeholder="${t('custValPh')}" value="${val}"><button class="small" onclick="this.parentNode.remove()">✕</button>`;
+  document.getElementById('customInputs').appendChild(d);}
+function evalStatus(reading,set){let worst="pass",any=false;
+  PARAMS[set].forEach(pr=>{const v=parseFloat(reading.vals[pr[0]]);if(isNaN(v))return;any=true;const mn=pr[3],mx=pr[4];let s="pass";
+    if(mx!=null&&v>mx)s="exceed";else if(mn!=null&&v<mn)s="exceed";
+    else{if(mx!=null&&v>=0.9*mx)s="watch";if(mn!=null&&v<=mn+(mx!=null?(mx-mn)*0.1:Math.abs(mn)*0.1))s="watch";}
+    if(s==="exceed")worst="exceed";else if(s==="watch"&&worst!=="exceed")worst="watch";});
+  return any?worst:"nodata";}
+document.getElementById('btnSaveReading').onclick=()=>{const p=curr(),set=CATS[p.cat].set;
+  const date=document.getElementById('rdDate').value||new Date().toISOString().slice(0,10);
+  const vals={};document.querySelectorAll('#paramInputs .pv').forEach(i=>{if(i.value!=="")vals[i.dataset.pid]=i.value;});
+  const custom={};document.querySelectorAll('#customInputs .reading-row').forEach(r=>{const n=r.querySelector('.ck-name').value.trim(),v=r.querySelector('.ck-val').value;if(n)custom[n]=v;});
+  if(Object.keys(vals).length===0&&Object.keys(custom).length===0){alert(t('alertFill'));return;}
+  const reading={date,vals,custom};reading.status=evalStatus(reading,set);
+  p.readings.push(reading);p.readings.sort((a,b)=>a.date<b.date?1:-1);p.status=p.readings[0].status;
+  save();drawMarkers();fillEditor();refreshReport();};
+function renderHistory(){const p=curr(),box=document.getElementById('history');
+  document.getElementById('histCount').textContent=p.readings.length;
+  if(!p.readings.length){box.innerHTML="<div class='muted'>"+t('noReadings')+"</div>";return;}
+  box.innerHTML="";
+  p.readings.forEach((r,idx)=>{const items=Object.entries(r.vals||{}).map(([k,v])=>{const pr=PARAMS[CATS[p.cat].set].find(x=>x[0]===k);return (pr?plabel(pr):k)+": "+v;});
+    Object.entries(r.custom||{}).forEach(([k,v])=>items.push(k+": "+v));
+    const d=document.createElement('div');d.className='ec';
+    d.innerHTML=`<div class="toprow"><b>${r.date}</b><span><span class="badge" style="background:${ST[r.status].c}">${stlabel(r.status)}</span> <button class="small danger">✕</button></span></div><div class="muted" style="margin-top:5px">${items.join(" · ")||"-"}</div>`;
+    d.querySelector('button').onclick=()=>{p.readings.splice(idx,1);p.status=p.readings.length?p.readings[0].status:"nodata";save();drawMarkers();fillEditor();refreshReport();};
+    box.appendChild(d);});}
+document.getElementById('edName').oninput=e=>{const p=curr();p.name=e.target.value;document.getElementById('edTitle').textContent=p.name;markers[p.id].setTooltipContent(buildTooltip(p));save();};
+document.getElementById('edImg').onchange=e=>{const f=e.target.files[0];if(!f)return;const p=curr();if(!p)return;
+  const reader=new FileReader();reader.onload=()=>{const img=new Image();img.onload=()=>{
+    const max=720;let w=img.width,h=img.height;if(w>max){h=Math.round(h*max/w);w=max;}
+    const cv=document.createElement('canvas');cv.width=w;cv.height=h;cv.getContext('2d').drawImage(img,0,0,w,h);
+    try{p.img=cv.toDataURL('image/jpeg',0.72);save();}catch(err){alert('Image too large');return;}
+    renderImgPreview();markers[p.id].setTooltipContent(buildTooltip(p));};img.src=reader.result;};
+  reader.readAsDataURL(f);};
+document.getElementById('btnRemoveImg').onclick=()=>{const p=curr();if(!p)return;delete p.img;save();renderImgPreview();
+  document.getElementById('edImg').value="";markers[p.id].setTooltipContent(buildTooltip(p));};
+document.getElementById('edCat').onchange=e=>{const p=curr();p.cat=e.target.value;save();drawMarkers();buildParamInputs();fillTrendParam();drawParamTrend();refreshReport();};
+document.getElementById('edStatus').onchange=e=>{const p=curr();p.status=e.target.value;save();drawMarkers();refreshReport();};
+document.getElementById('edNote').oninput=e=>{curr().note=e.target.value;save();};
+document.getElementById('edLat').onchange=e=>{const p=curr();p.lat=parseFloat(e.target.value)||p.lat;save();drawMarkers();map.panTo([p.lat,p.lng]);};
+document.getElementById('edLng').onchange=e=>{const p=curr();p.lng=parseFloat(e.target.value)||p.lng;save();drawMarkers();map.panTo([p.lat,p.lng]);};
+document.getElementById('btnAddCustom').onclick=()=>addCustomRow();
+document.getElementById('trendParam').onchange=drawParamTrend;
+document.getElementById('trendDetails').addEventListener('toggle',function(){if(this.open)setTimeout(drawParamTrend,60);});
+document.getElementById('edApiUrl').oninput=e=>{const p=curr();if(p){p.apiUrl=e.target.value;save();}};
+document.getElementById('edApiKey').oninput=e=>{const p=curr();if(p){p.apiKey=e.target.value;save();}};
+document.getElementById('btnFetchDevice').onclick=fetchDevice;
+async function fetchDevice(){
+  const p=curr();if(!p)return;
+  const url=document.getElementById('edApiUrl').value.trim();
+  const st=document.getElementById('apiStatus');
+  if(!url){st.textContent=t('apiNeedUrl');return;}
+  st.textContent=t('fetching');
+  try{
+    const headers={};const key=document.getElementById('edApiKey').value.trim();
+    if(key)headers['Authorization']='Bearer '+key;
+    const res=await fetch(url,{headers});
+    const json=await res.json();
+    const vals=json.values||json.data||json;
+    if(json.date)document.getElementById('rdDate').value=json.date;
+    let n=0;
+    document.querySelectorAll('#paramInputs .pv').forEach(i=>{const pid=i.dataset.pid;
+      if(vals && vals[pid]!=null){i.value=vals[pid];n++;}});
+    st.textContent=n?(t('fetchOk')+" ("+n+")"):t('fetchNone');
+    // เปิดส่วนบันทึกผลให้เห็นค่า
+    const rec=document.querySelector('#drawer details');if(rec&&n)rec.open=true;
+  }catch(e){st.textContent=t('fetchErr')+": "+e.message;}
+}
+document.getElementById('btnDel').onclick=()=>{if(!confirm(t('confirmDel')))return;
+  DATA.points=DATA.points.filter(p=>p.id!==selId);selId=null;closeDrawer();save();drawMarkers();refreshReport();};
+
+/* ============ Setup actions ============ */
+document.getElementById('btnAdd').onclick=function(){addMode=!addMode;this.classList.toggle('accent',addMode);this.textContent=addMode?t('addPointActive'):t('addPoint');};
+document.getElementById('btnAuto').onclick=()=>{DATA.points.forEach(p=>{if(p.readings.length)p.status=p.readings[0].status;});save();drawMarkers();refreshReport();alert(t('autoDone'));};
+document.getElementById('btnExport').onclick=()=>{const b=new Blob([JSON.stringify(DATA,null,2)],{type:"application/json"});
+  const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download="tegh-env-monitoring.json";a.click();};
+document.getElementById('btnImport').onclick=()=>document.getElementById('fileImport').click();
+document.getElementById('fileImport').onchange=e=>{const f=e.target.files[0];if(!f)return;
+  const r=new FileReader();r.onload=()=>{try{DATA=JSON.parse(r.result);save();selId=null;closeDrawer();drawMarkers();refreshReport();alert(t('importOk'));}catch(x){alert(t('importBad'));}};r.readAsText(f);};
+document.getElementById('btnCsv').onclick=exportCsv;
+/* ===== อัปโหลดข้อมูลแนวโน้มรายเดือน (CSV) ===== */
+const HDRMAP={name:'name','จุดตรวจ':'name',point:'name',date:'date','วันที่':'date',
+  ph:'pH',temp:'temp','อุณหภูมิ':'temp',ec:'ec',cod:'cod',bod:'bod',turbidity:'turb',turb:'turb','ความขุ่น':'turb',
+  tss:'tss',tds:'tds',oil:'oil','oil and grease':'oil','oil&grease':'oil'};
+function parseCSVLine(line){const out=[];let cur='',q=false;
+  for(let i=0;i<line.length;i++){const c=line[i];
+    if(q){if(c==='"'){if(line[i+1]==='"'){cur+='"';i++;}else q=false;}else cur+=c;}
+    else{if(c==='"')q=true;else if(c===','){out.push(cur);cur='';}else cur+=c;}}
+  out.push(cur);return out;}
+document.getElementById('btnExportTrend').onclick=exportTrendCSV;
+function exportTrendCSV(){
+  const ids=['pH','temp','ec','cod','bod','turb','tss','tds','oil'];
+  const rows=[['name','date',...ids]];
+  DATA.points.slice().forEach(p=>{
+    [...p.readings].sort((a,b)=>a.date<b.date?-1:1).forEach(r=>{
+      rows.push([p.name,r.date,...ids.map(id=>(r.vals&&r.vals[id]!=null)?r.vals[id]:'')]);});
+  });
+  const csv="﻿"+rows.map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(",")).join("\n");
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));a.download="tegh-trend.csv";a.click();
+}
+document.getElementById('btnUploadTrend').onclick=()=>document.getElementById('fileTrend').click();
+document.getElementById('fileTrend').onchange=e=>{const f=e.target.files[0];if(!f)return;
+  const r=new FileReader();r.onload=()=>{importTrendCSV(r.result);e.target.value="";};r.readAsText(f);};
+function importTrendCSV(text){
+  text=text.replace(/^﻿/,'');
+  const lines=text.split(/\r?\n/).filter(l=>l.trim()!=="");
+  if(lines.length<2){alert(t('importBad'));return;}
+  const hdr=parseCSVLine(lines[0]).map(h=>HDRMAP[h.trim().toLowerCase()]||h.trim());
+  const ni=hdr.indexOf('name'),di=hdr.indexOf('date');
+  if(ni<0||di<0){alert(t('importBad'));return;}
+  const pids=['pH','temp','ec','cod','bod','turb','tss','tds','oil'];
+  let added=0,matched=0;
+  for(let li=1;li<lines.length;li++){
+    const cells=parseCSVLine(lines[li]);
+    const nm=(cells[ni]||"").trim(), date=(cells[di]||"").trim();
+    if(!nm||!date)continue;
+    const p=DATA.points.find(x=>x.name.trim()===nm);
+    if(!p)continue; matched++;
+    const set=CATS[p.cat].set, vals={};
+    hdr.forEach((h,ci)=>{if(pids.includes(h)){const v=(cells[ci]||"").trim();
+      if(v!==""&&!isNaN(parseFloat(v)))vals[h]=parseFloat(v);}});
+    if(Object.keys(vals).length===0)continue;
+    const reading={date,vals,custom:{}};reading.status=evalStatus(reading,set);
+    const ex=p.readings.findIndex(r=>r.date===date);
+    if(ex>=0)p.readings[ex]=reading;else p.readings.push(reading);
+    p.readings.sort((a,b)=>a.date<b.date?1:-1);p.status=p.readings[0].status;added++;
+  }
+  save();drawMarkers();refreshReport();if(curr())fillEditor();
+  alert(matched?(t('uploadDone')+": "+added+" "+t('readingsAdded')):t('uploadNone'));
+}
+document.getElementById('btnReset').onclick=()=>{if(confirm(t('confirmReset'))){DATA=blank();save();selId=null;closeDrawer();drawMarkers();refreshReport();map.setView([C_LAT,C_LNG],14);}};
+document.getElementById('btnViewAll').onclick=()=>{const ex=DATA.points.find(p=>p.status==='exceed');if(ex)selectPoint(ex.id);};
+function exportCsv(){let rows=[["Point","Type","Status","Lat","Lng","Date","Values"]];
+  DATA.points.forEach(p=>{if(!p.readings.length){rows.push([p.name,clabel(p.cat),stlabel(p.status),p.lat,p.lng,"",""]);return;}
+    p.readings.forEach(r=>{const set=CATS[p.cat].set;
+      const vs=Object.entries(r.vals||{}).map(([k,v])=>{const pr=PARAMS[set].find(x=>x[0]===k);return (pr?plabel(pr):k)+"="+v;});
+      Object.entries(r.custom||{}).forEach(([k,v])=>vs.push(k+"="+v));
+      rows.push([p.name,clabel(p.cat),stlabel(r.status),p.lat,p.lng,r.date,vs.join("; ")]);});});
+  const csv="﻿"+rows.map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(",")).join("\n");
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));a.download="tegh-env-readings.csv";a.click();}
+
+/* ============ Dashboard render ============ */
+let distChart,trend6Chart,pchart;
+function counts(){const c={nodata:0,pass:0,watch:0,exceed:0};DATA.points.forEach(p=>c[p.status]++);return c;}
+function refreshReport(){
+  const TICK=theme==='dark'?'#cfe3da':'#5c7366';
+  const c=counts(),tot=DATA.points.length,pct=n=>tot?((n/tot*100).toFixed(1)+"%"):"0%";
+  // overview
+  const ovRows=[["nodata","noData"],["pass","withinStd"],["watch","alertS"],["exceed","exceedS"]];
+  document.getElementById('overview').innerHTML=ovRows.map(([k,lab])=>`
+    <div class="ov-row" style="background:${ST[k].c}1f;border:1px solid ${ST[k].c}55;">
+      <span class="lab"><span class="dot" style="background:${ST[k].c}"></span> ${t(lab)}</span>
+      <span><span class="n" style="color:${ST[k].c}">${c[k]}</span><span class="u">${t('points')}</span></span></div>`).join("");
+  document.getElementById('ovDate').textContent=new Date().toLocaleDateString(lang==='th'?'th-TH':'en-GB',{day:'2-digit',month:'short',year:'numeric'});
+  // summary cards
+  const cardDefs=[["linear-gradient(135deg,#0a97d9,#0a5f96)",t('totalPoints'),tot,""],["linear-gradient(135deg,#37b97e,#23895a)",t('withinStd'),c.pass,pct(c.pass)],
+    ["linear-gradient(135deg,#f3b63f,#d68f13)",t('alertS'),c.watch,pct(c.watch)],["linear-gradient(135deg,#ec5b52,#c5362d)",t('exceedS'),c.exceed,pct(c.exceed)]];
+  document.getElementById('summaryCards').innerHTML=cardDefs.map(([col,ti,n,p])=>`
+    <div class="sumcard" style="background:${col}"><div class="t">${ti}</div><div class="n">${n} <span style="font-size:12px;font-weight:600">${t('points')}</span></div><div class="p">${p}</div></div>`).join("");
+  // stations
+  document.getElementById('stations').innerHTML=Object.keys(CATS).map(k=>{const n=DATA.points.filter(p=>p.cat===k).length;
+    return `<div class="li"><span class="lab"><span class="dot" style="background:${CATS[k].color}"></span> ${clabel(k)}</span><b>${n} ${t('points')}</b></div>`;}).join("");
+  // exceedances
+  const ex=DATA.points.filter(p=>p.status==='exceed');
+  document.getElementById('exceedList').innerHTML=ex.length?ex.map(p=>{
+    const last=p.readings[0];let param="-",date=last?last.date:"-";
+    if(last){const set=CATS[p.cat].set;let f="";PARAMS[set].forEach(pr=>{const v=parseFloat(last.vals[pr[0]]);if(!isNaN(v)){const mx=pr[4],mn=pr[3];if((mx!=null&&v>mx)||(mn!=null&&v<mn))f=f||plabel(pr);}});param=f||"-";}
+    return `<div class="exrow" onclick="selectPoint('${p.id}')"><span class="dot" style="background:${ST.exceed.c}"></span><b>${p.name}</b><span class="muted">${param} · ${date}</span><span class="badge-ex">${stlabel('exceed')}</span></div>`;
+  }).join(""):`<div class="muted">${t('noReadings')}</div>`;
+  // charts
+  drawDist(TICK);drawTrend6(TICK);
+  if(curr())drawParamTrend();
+  document.getElementById('ftLast').textContent=t('lastUpdated')+": "+new Date().toLocaleString(lang==='th'?'th-TH':'en-GB');
+}
+function drawDist(TICK){const c=counts();if(distChart)distChart.destroy();
+  distChart=new Chart(document.getElementById('chartDist'),{type:'doughnut',
+    data:{labels:[stlabel('pass'),stlabel('watch'),stlabel('exceed'),stlabel('nodata')],
+      datasets:[{data:[c.pass,c.watch,c.exceed,c.nodata],backgroundColor:[ST.pass.c,ST.watch.c,ST.exceed.c,ST.nodata.c],borderWidth:0}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right',labels:{color:TICK,boxWidth:12,font:{size:10}}}}}});}
+function drawTrend6(TICK){
+  // group readings by month
+  const months={};DATA.points.forEach(p=>p.readings.forEach(r=>{const m=(r.date||"").slice(0,7);if(!m)return;
+    if(!months[m])months[m]={pass:0,watch:0,exceed:0};if(months[m][r.status]!=null)months[m][r.status]++;}));
+  let keys=Object.keys(months).sort();keys=keys.slice(-6);
+  if(trend6Chart)trend6Chart.destroy();
+  trend6Chart=new Chart(document.getElementById('chartTrend6'),{type:'line',
+    data:{labels:keys,datasets:[
+      {label:t('withinStd'),data:keys.map(k=>months[k].pass),borderColor:ST.pass.c,backgroundColor:ST.pass.c,tension:.3},
+      {label:t('alertS'),data:keys.map(k=>months[k].watch),borderColor:ST.watch.c,backgroundColor:ST.watch.c,tension:.3},
+      {label:t('exceedS'),data:keys.map(k=>months[k].exceed),borderColor:ST.exceed.c,backgroundColor:ST.exceed.c,tension:.3}]},
+    options:{responsive:true,maintainAspectRatio:false,scales:{x:{ticks:{color:TICK,font:{size:9}}},y:{ticks:{color:TICK},beginAtZero:true}},plugins:{legend:{labels:{color:TICK,boxWidth:10,font:{size:9}}}}}});}
+function fillTrendParam(){const p=curr();const sel=document.getElementById('trendParam');if(!p){sel.innerHTML="";return;}
+  sel.innerHTML=PARAMS[CATS[p.cat].set].map(pr=>`<option value="${pr[0]}">${plabel(pr)}</option>`).join("");}
+function drawParamTrend(){const TICK=theme==='dark'?'#cfe3da':'#5c7366';const p=curr();const pid=document.getElementById('trendParam').value;
+  if(pchart)pchart.destroy();if(!p||!pid)return;
+  const rs=[...p.readings].reverse();const labels=rs.map(r=>r.date);const vals=rs.map(r=>parseFloat(r.vals[pid]));
+  const pr=PARAMS[CATS[p.cat].set].find(x=>x[0]===pid);if(!pr)return;
+  const lc=theme==='dark'?'#e6e6e6':'#333333';
+  const ds=[{label:plabel(pr)+(pr[2]?" ("+pr[2]+")":""),data:vals,borderColor:lc,backgroundColor:lc+'33',tension:.3,spanGaps:true}];
+  if(pr[4]!=null)ds.push({label:t('maxStd'),data:labels.map(()=>pr[4]),borderColor:ST.exceed.c,borderDash:[6,4],pointRadius:0});
+  if(pr[3]!=null)ds.push({label:t('minStd'),data:labels.map(()=>pr[3]),borderColor:ST.watch.c,borderDash:[6,4],pointRadius:0});
+  pchart=new Chart(document.getElementById('chartParam'),{type:'line',data:{labels,datasets:ds},
+    options:{responsive:true,maintainAspectRatio:false,scales:{x:{ticks:{color:TICK}},y:{ticks:{color:TICK}}},plugins:{legend:{labels:{color:TICK,font:{size:10}}}}}});}
+
+/* ============ Lang + Theme ============ */
+function applyLang(){
+  document.documentElement.lang=lang;
+  document.querySelectorAll('[data-i18n]').forEach(el=>{el.textContent=t(el.dataset.i18n);});
+  document.querySelectorAll('[data-i18n-ph]').forEach(el=>{el.placeholder=t(el.dataset.i18nPh);});
+  document.getElementById('btnLang').textContent=t('langBtn');
+  const sp=document.getElementById('setupPanel');
+  document.getElementById('btnSetup').textContent=sp.classList.contains('hidden')?t('setup'):t('setupOpen');
+  const cs=document.getElementById('edCat');const cv=cs.value;
+  cs.innerHTML=Object.keys(CATS).map(k=>`<option value="${k}">${clabel(k)}</option>`).join("");if(cv)cs.value=cv;
+  if(addMode)document.getElementById('btnAdd').textContent=t('addPointActive');
+  updateBottomBtn();
+  addLegendControl();addLayerControl();refreshReport();
+  if(curr())fillEditor();
+}
+function applyTheme(){document.body.classList.toggle('dark',theme==='dark');
+  document.getElementById('btnTheme').textContent=theme==='dark'?'☀️':'🌙';refreshReport();}
+document.getElementById('btnLang').onclick=()=>{lang=lang==='th'?'en':'th';localStorage.setItem('tegh_lang',lang);applyLang();};
+document.getElementById('btnTheme').onclick=()=>{theme=theme==='dark'?'light':'dark';localStorage.setItem('tegh_theme',theme);applyTheme();};
+
+/* ============ Init ============ */
+document.getElementById('rdDate').value=new Date().toISOString().slice(0,10);
+document.body.classList.toggle('dark',theme==='dark');
+document.getElementById('btnTheme').textContent=theme==='dark'?'☀️':'🌙';
+applyImports();
+drawMarkers();addLegendControl();addLayerControl();
+applyLang();
+applyBottom();applyLabels();
+setTimeout(()=>map.invalidateSize(),300);
+window.addEventListener('resize',()=>map.invalidateSize());
+window.addEventListener('orientationchange',()=>setTimeout(()=>map.invalidateSize(),250));
+</script>
+</body>
+</html>
