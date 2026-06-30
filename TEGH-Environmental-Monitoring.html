@@ -65,24 +65,24 @@
   .rightcol{display:flex;flex-direction:column;gap:10px;overflow:auto;}
   .card{background:var(--glass);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid var(--glassBd);border-radius:16px;padding:14px;box-shadow:var(--ring);display:flex;flex-direction:column;min-height:0;transition:transform .18s ease, box-shadow .18s ease;}
   .card:hover{transform:translateY(-3px);box-shadow:var(--glassHi);}
-  .card h3{margin:0 0 9px;font-size:12px;letter-spacing:.8px;text-transform:uppercase;color:var(--accent);font-weight:800;display:flex;align-items:center;gap:6px;border-left:3px solid var(--accent);padding-left:8px;}
+  .card h3{margin:0 0 9px;font-size:14px;letter-spacing:.6px;text-transform:uppercase;color:var(--accent);font-weight:800;display:flex;align-items:center;gap:6px;border-left:3px solid var(--accent);padding-left:8px;}
   .card .body{flex:1;min-height:0;overflow:auto;}
   .chartwrap{position:relative;flex:1;min-height:0;}
-  .li{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:4px 2px;font-size:13px;border-bottom:1px dashed var(--border);}
+  .li{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 2px;font-size:15px;border-bottom:1px dashed var(--border);}
   .li:last-child{border-bottom:none;}
   .li .lab{display:flex;align-items:center;gap:8px;}
   .dot{display:inline-block;width:12px;height:12px;border-radius:50%;border:1px solid #0002;}
   .pin-ic{width:16px;height:16px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;color:#fff;font-size:10px;}
   .big{font-size:19px;font-weight:800;}
-  .ov-row{display:flex;align-items:center;justify-content:space-between;padding:11px 12px;border-radius:10px;margin-bottom:7px;}
-  .ov-row .n{font-size:23px;font-weight:800;}
-  .ov-row .u{font-size:11px;color:var(--muted);margin-left:4px;}
+  .ov-row{display:flex;align-items:center;justify-content:space-between;padding:12px 13px;border-radius:10px;margin-bottom:7px;font-size:15px;font-weight:600;}
+  .ov-row .n{font-size:26px;font-weight:800;}
+  .ov-row .u{font-size:12px;color:var(--muted);margin-left:4px;}
   .sumgrid{display:grid;grid-template-columns:1fr 1fr;gap:9px;}
   .sumcard{border-radius:12px;padding:12px;color:#fff;box-shadow:0 4px 12px rgba(0,0,0,.12);position:relative;overflow:hidden;}
   .sumcard::after{content:"";position:absolute;right:-14px;top:-14px;width:54px;height:54px;border-radius:50%;background:rgba(255,255,255,.14);}
   .sumcard .t{font-size:11px;opacity:.95;} .sumcard .n{font-size:25px;font-weight:800;}
   .sumcard .p{font-size:11px;opacity:.9;}
-  .exrow{display:grid;grid-template-columns:auto 1fr auto auto;gap:8px;align-items:center;font-size:12.5px;padding:6px 2px;border-bottom:1px dashed var(--border);cursor:pointer;}
+  .exrow{display:grid;grid-template-columns:auto 1fr auto auto;gap:8px;align-items:center;font-size:14px;padding:8px 2px;border-bottom:1px dashed var(--border);cursor:pointer;}
   .badge-ex{background:var(--exceed);color:#fff;font-size:10.5px;padding:2px 7px;border-radius:5px;font-weight:700;}
   /* editor drawer */
   #drawer{position:absolute;top:12px;right:12px;width:360px;max-width:calc(100% - 24px);max-height:calc(100% - 24px);
@@ -130,13 +130,13 @@
 </head>
 <body>
   <header>
-    <div class="logo"><img src="logo.png" alt="TEGH" onerror="this.outerHTML='<b style=&quot;font-size:20px&quot;>▲ TEGH</b>'"></div>
+    <div class="logo"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAOMAAABICAMAAAAzi7JTAAAAwFBMVEUAAAAAC47uACkAAH4ACov+AAAACY4AAP8AAKoACowACoz1ADQACosACYzpACgACozsACj/AFXqACjpACjnACjqACjSACy+AD8AAFVVAH8AE4qvAAJ/AAD/AH+tAFHaAB3cACxVAFVzAHMADaEAEXcAF6J/AFUAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABgwMDVAAAAQHRSTlMA/PwEUwEUAQOOzgpwMCuyzQOxb1CPCQQDBg0DAgIGCiQEBf8PCwYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAARPW3gAABzlJREFUeNrdmol2ozoMhlUcsxkIa5IJuW1n7vL+j3hl4xUM2cg5JTpzpmniuHxIln9LAFwzKv69s9EKuhbYWzMy6IKgeGtIBk0QcMjq3eJTvzoMiBxSv0npWyBS7cV2QAxKBv0bpSCqaCxEASnQLtCxzUNWUJRDZB6hCAILkgdphdjlYeOQFL6DoOYpplKIdTn8QMgLZfzVgV42jXjgRA1U+EoialboGdTi1WXDiYdSNjiNUZCvSvapIDtQC7Tm92CriIdaQShEXHw693RMrc4O2DYhUbfVCqKtrY1RQ5aBBblJRKHbXJMCR2sBYw2+uVFpOkY8OppucOF2IbWvWhOwJiDNDWjUq3ZzkBqxARZ4IBRkSQ8Gkm0sUFuF+CVpawehorVKQkcFua0zl9kecFNQ6dU6bOC6bOQtOFr5V69XaTFZtgjHRFfGkMnFkTj2zOP8Yo+WdhrNcjTbPO57lBZy+9c7vfsWpX3t5N0X2omspsMd/WI7TY1wXEvpl5EI1kS7KxYCgfDKmBwsxwgnhfl0zAly7xfM9O7bRpqyQYfSipZOtFYSulPQ1NZBap4I0o9l20EIuytj9mA8FwPkiWfSDMck9i/a65CbeWIbUV+vktq9dGw5hCK9MBmpvQLqjZ7VkOswJvqS8We+n5mHQHYHozxquC5RqXOIVhWprbX6qI5vfWdWZiRAktl57mKkPasnNRuMVn0AoeJg7ETqaBFTmZrWZcSVm36sw2jtA5WzRgudhagUBcw9GjOTjF/AGC0g3h2rrX+rU9HKxU43iVR3U5WfrMoYk4XJsjsZa78uM96TJPXoJliQ9VDmWoXx7yGvxpAsznMXI5uTnmoV1jIlsQudKzEHQ26NIEuMGccYyy3GNPEbv377WvFqd3noGrmPsRj2CM+p/ihdXMoM61E0tIdynK6UaZ+GjtrTjMmSKiGgN4197h9wB2M7y6ijVeYe35+6KMZ+ole1G0ISGmlpMfI3fk3tt3upCderUoHGyqIH/Oh1hI5WMcBbiaPzX7cYbVFl+5EsuDExqic2ksDvxyiMlJHIux6FI8qq8kLW+mB89BaA5Lc9N+AmRlaM7bsQaztO9ZdPmuqfXNnZZtw5f9ebV5USPSxEa828tcaDVkPsEcZfTiHeihiir9Q4G6Mw9efV1DWfzmHl7HXqA4i/CqdKB6Uv5T7KyMPeDMqjGDyqx9kfZ7V9PNGd3sqFOYD0sxuHfzE/yNjyRWEA1HcJnNO5/fE6o/aVtwal7kBJq6kXdXXEl3IfYxxutM04qEQS7j+eYDQlNx+kOS5X89URWItR1jPHfsSA3X88xUjVZj+0cvypc7R54C+N7hrQtRhVyZaY9ShyTjQWdnczWm2OZtoktg4gTjdd+r6uZlpYDzDqiIh1Xt1FhGuA5ONZRoSkqpdzmESeOS5XJk6/9Pi5VuRtjKVlnY4iPFdZhQ/06nhjcBgTp9STzTDy/ri8aN5D7kealLmiHB1XlPqWzLWvHtA51CNX+UnFXGzuY7xBA6jnHEytH6qL9wAitA4m2L7RwTXfa72N8S9jfz69Sg2PKpGuyXoZszjUQpbE84z8YhUkuhKO1Htcri6IqZyId2OhnfyUXjXB+pHmltTPH6wDmOajVuBdAXaGNcdlXJFFZ/aypWbyDYwx3CDKcWAIi7F6O6Ooz5Q2JTDlJlO0MoTllWbHVcaxzlSW8WvDTd9OkUk2WPIsI8bkwXQg65YKNYtqvDp+ybxbmzzfX+kCXGdcrOcsj3uckSc248qg7ArjKebsZHzJXnke4ElGHJi9hJFLnt7pitdd06I1Xe3okYv3OLkqo7Mk12QU3mFdsGgdu+WRuacZlzz5HCNPMMCacg6wbBhcdyJnTJ9l5JIufQ0j30WAtbWPsG5xo/7vNzkREkev9iMffMrSNWrI/mWJ2adxMcu6+XabxvGL/cgvGUie7FNfLTqznXo/o+hA8v8Lnm3QMPN8H4cOZoZ/MsUNaxcCLM5iFXxd+HDZzu6NFLInPLsW2vMQ//TnWx5JOo4Sy588c06q+53s877WYkJeOT2lx8Pnn9+DAz393HS34Epd85z9wG+Lc9ljZr6wNA9EkzQSxeIWkpEDbV+Gm3vWijjPgIjqbb5z+NKEN1hy49Xda0NpZbwQBX4Y2Q4cB+ieJ5p/+QMVeQh54kmbP9oiIHtzVuNvjAI0TXj/yDxlgRlH1AOzaCt+JGEsiLIQPA5MhQNDN2r5HckWT7o/zYugirS49SXuFpG5DnTkRr6Z1Uggz8An8zHDTB3IG8CpXf7cyFpMeUVhJPN9DhygxduqaLYRN573w/IiWgFjhuHxm42jlsgHC/HD3XJF5qe5MTSddxSkmdCixO9Add7AdUji7eyMVm8vzfKzR9igA+PBgda3TluTN7NPpk0c6CTjjWk47xOGZgXCGxjG4niLn3XgZo2nSpQ34syNh+Asj97HgePaRczP0PBWDvwflzV3YUPrlccAAAAASUVORK5CYII=" alt="TEGH" onerror="this.outerHTML='<b style=&quot;font-size:20px&quot;>▲ TEGH</b>'"></div>
     <div style="text-align:center;flex:1;">
       <h1 data-i18n="title">Environmental Monitoring Dashboard</h1>
       <div class="sub" data-i18n="sub">Real-time Environmental Quality Monitoring for Sustainable Industrial Estate</div>
     </div>
     <div class="headtools">
-      <div class="teil">🌿 TEIL</div>
+      <div class="teil"><img src="data:image/png;base64,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" alt="TEIL" style="height:40px;display:block;" onerror="this.outerHTML='🌿 TEIL'"></div>
       <button id="btnLang">🌐 EN</button>
       <button id="btnTheme">🌙</button>
       <button class="accent" id="btnSetup">⚙️ Setup ▾</button>
@@ -730,11 +730,63 @@ function refreshReport(){
   if(curr())drawParamTrend();
   document.getElementById('ftLast').textContent=t('lastUpdated')+": "+new Date().toLocaleString(lang==='th'?'th-TH':'en-GB');
 }
-function drawDist(TICK){const c=counts();if(distChart)distChart.destroy();
-  distChart=new Chart(document.getElementById('chartDist'),{type:'doughnut',
-    data:{labels:[stlabel('pass'),stlabel('watch'),stlabel('exceed'),stlabel('nodata')],
-      datasets:[{data:[c.pass,c.watch,c.exceed,c.nodata],backgroundColor:[ST.pass.c,ST.watch.c,ST.exceed.c,ST.nodata.c],borderWidth:0}]},
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right',labels:{color:TICK,boxWidth:12,font:{size:10}}}}}});}
+function drawDist(TICK){
+  const c=counts();
+  const data=[c.pass,c.watch,c.exceed,c.nodata];
+  const total=data.reduce(function(a,b){return a+b;},0);
+  const txtCol=['#fff','#3a3a3a','#fff','#3a3a3a'];
+  if(distChart)distChart.destroy();
+  const valuePlugin={
+    id:'distVals',
+    afterDatasetsDraw:function(chart){
+      const ctx=chart.ctx;
+      const meta=chart.getDatasetMeta(0);
+      meta.data.forEach(function(arc,i){
+        const v=data[i];
+        if(!v)return;
+        const pos=arc.tooltipPosition();
+        ctx.save();
+        ctx.fillStyle=txtCol[i];
+        ctx.font='700 13px Inter,sans-serif';
+        ctx.textAlign='center';
+        ctx.textBaseline='middle';
+        ctx.fillText(String(v),pos.x,pos.y);
+        ctx.restore();
+      });
+      const ar=chart.chartArea;
+      const cx=(ar.left+ar.right)/2;
+      const cy=(ar.top+ar.bottom)/2;
+      ctx.save();
+      ctx.textAlign='center';
+      ctx.textBaseline='middle';
+      ctx.fillStyle=TICK;
+      ctx.font='800 21px Inter,sans-serif';
+      ctx.fillText(String(total),cx,cy-4);
+      ctx.font='600 10px Inter,sans-serif';
+      ctx.fillText(t('points'),cx,cy+13);
+      ctx.restore();
+    }
+  };
+  function genLabels(ch){
+    const dd=ch.data.datasets[0];
+    return ch.data.labels.map(function(l,i){
+      const pc=total?Math.round(dd.data[i]/total*100):0;
+      return {text:l+": "+dd.data[i]+" ("+pc+"%)",fillStyle:dd.backgroundColor[i],strokeStyle:dd.backgroundColor[i],index:i};
+    });
+  }
+  const opts={
+    responsive:true,
+    maintainAspectRatio:false,
+    cutout:'58%',
+    plugins:{legend:{position:'right',labels:{color:TICK,boxWidth:12,font:{size:12},generateLabels:genLabels}}}
+  };
+  distChart=new Chart(document.getElementById('chartDist'),{
+    type:'doughnut',
+    data:{labels:[stlabel('pass'),stlabel('watch'),stlabel('exceed'),stlabel('nodata')],datasets:[{data:data,backgroundColor:[ST.pass.c,ST.watch.c,ST.exceed.c,ST.nodata.c],borderWidth:0}]},
+    options:opts,
+    plugins:[valuePlugin]
+  });
+}
 function drawTrend6(TICK){
   // group readings by month
   const months={};DATA.points.forEach(p=>p.readings.forEach(r=>{const m=(r.date||"").slice(0,7);if(!m)return;
@@ -746,7 +798,7 @@ function drawTrend6(TICK){
       {label:t('withinStd'),data:keys.map(k=>months[k].pass),borderColor:ST.pass.c,backgroundColor:ST.pass.c,tension:.3},
       {label:t('alertS'),data:keys.map(k=>months[k].watch),borderColor:ST.watch.c,backgroundColor:ST.watch.c,tension:.3},
       {label:t('exceedS'),data:keys.map(k=>months[k].exceed),borderColor:ST.exceed.c,backgroundColor:ST.exceed.c,tension:.3}]},
-    options:{responsive:true,maintainAspectRatio:false,scales:{x:{ticks:{color:TICK,font:{size:9}}},y:{ticks:{color:TICK},beginAtZero:true}},plugins:{legend:{labels:{color:TICK,boxWidth:10,font:{size:9}}}}}});}
+    options:{responsive:true,maintainAspectRatio:false,scales:{x:{ticks:{color:TICK,font:{size:11}}},y:{ticks:{color:TICK,font:{size:11}},beginAtZero:true}},plugins:{legend:{labels:{color:TICK,boxWidth:12,font:{size:12}}}}}});}
 function fillTrendParam(){const p=curr();const sel=document.getElementById('trendParam');if(!p){sel.innerHTML="";return;}
   sel.innerHTML=PARAMS[CATS[p.cat].set].map(pr=>`<option value="${pr[0]}">${plabel(pr)}</option>`).join("");}
 function drawParamTrend(){const TICK=theme==='dark'?'#cfe3da':'#5c7366';const p=curr();const pid=document.getElementById('trendParam').value;
